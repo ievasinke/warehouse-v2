@@ -1,0 +1,19 @@
+{
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Ieva Šinke",
+      "email": "ieva.sinke@gmail.com"
+    }
+  ],
+  "require": {
+    "nesbot/carbon": "^2.72",
+    "ext-json": "*",
+    "ext-readline": "*",
+    "symfony/console": "^5.4"
+  }
+}
