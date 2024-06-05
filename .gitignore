@@ -1,3 +1,5 @@
 /vendor/
 
 /app/.DS_Store
+
+/logs/*.log
