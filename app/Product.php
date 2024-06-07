@@ -7,38 +7,40 @@ use JsonSerializable;
 
 class Product implements JsonSerializable
 {
-    private int $id;
+    private string $id;
     private string $name;
-    private ?string $description;
     private int $amount;
     private string $createdBy;
+    private float $price;
+    private ?Carbon $expiresAt;
     private Carbon $createdAt;
     private ?Carbon $updatedAt;
     private ?Carbon $deletedAt;
 
     public function __construct(
-        int     $id,
+        string  $id,
         string  $name,
-        ?string $description,
         int     $amount,
         string  $createdBy,
-        string  $createdAt = null,
+        float   $price,
+        ?string $expiresAt = null,
+        ?string $createdAt = null,
         ?string $updatedAt = null,
         ?string $deletedAt = null
     )
     {
         $this->id = $id;
         $this->name = $name;
-        $this->description = $description;
         $this->amount = $amount;
         $this->createdBy = $createdBy;
+        $this->price = $price;
+        $this->expiresAt = $expiresAt ? Carbon::parse($expiresAt) : null;
         $this->createdAt = $createdAt ? Carbon::parse($createdAt) : Carbon::now();
         $this->updatedAt = $updatedAt ? Carbon::parse($updatedAt) : null;
         $this->deletedAt = $deletedAt ? Carbon::parse($deletedAt) : null;
-
     }
 
-    public function getId(): int
+    public function getId(): string
     {
         return $this->id;
     }
@@ -46,11 +48,6 @@ class Product implements JsonSerializable
     public function getName(): string
     {
         return $this->name;
-    }
-
-    public function getDescription(): ?string
-    {
-        return $this->description;
     }
 
     public function getAmount(): int
@@ -67,6 +64,16 @@ class Product implements JsonSerializable
     public function getCreatedBy(): string
     {
         return $this->createdBy;
+    }
+
+    public function getPrice(): float
+    {
+        return $this->price;
+    }
+
+    public function getExpiresAt(): ?Carbon
+    {
+        return $this->expiresAt;
     }
 
     public function getCreatedAt(): Carbon
@@ -94,12 +101,13 @@ class Product implements JsonSerializable
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'description' => $this->description,
             'amount' => $this->amount,
             'createdBy' => $this->createdBy,
-            'createdAt' => $this->getCreatedAt()->toIso8601String(),
-            'updatedAt' => $this->getUpdatedAt() ? $this->getUpdatedAt()->toIso8601String() : null,
-            'deletedAt' => $this->getDeletedAt() ? $this->getDeletedAt()->toIso8601String() : null
+            'price' => $this->price,
+            'expiresAt' => $this->expiresAt ? $this->expiresAt->toIso8601String() : null,
+            'createdAt' => $this->createdAt->toIso8601String(),
+            'updatedAt' => $this->updatedAt ? $this->updatedAt->toIso8601String() : null,
+            'deletedAt' => $this->deletedAt ? $this->deletedAt->toIso8601String() : null,
         ];
     }
 }

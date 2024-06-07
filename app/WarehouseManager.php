@@ -6,6 +6,7 @@ use Exception;
 use Carbon\Carbon;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Output\ConsoleOutput;
+use Ramsey\Uuid\Uuid;
 
 class WarehouseManager
 {
@@ -28,9 +29,10 @@ class WarehouseManager
             $products[] = new Product(
                 $productData->id,
                 $productData->name,
-                $productData->description,
                 $productData->amount,
                 $productData->createdBy,
+                $productData->price,
+                $productData->expiresAt,
                 $productData->createdAt,
                 $productData->updatedAt,
                 $productData->deletedAt
@@ -67,70 +69,54 @@ class WarehouseManager
         $outputTasks = new ConsoleOutput();
         $tableProducts = new Table($outputTasks);
         $tableProducts
-            ->setHeaders(['Id', 'Name', 'Description', 'Amount', 'Created By', 'Created At', 'Updated At'])
-            ->setRows(array_map(function (Product $product): array {
+            ->setHeaders(['Index', 'Name', 'Amount', 'Created by', 'Price', 'Expires', 'Created at', 'Last Updated'])
+            ->setRows(array_map(function (int $index, Product $product): array {
                 return [
-                    $product->getId(),
+                    $index + 1,
                     $product->getName(),
-                    $product->getDescription(),
                     $product->getAmount(),
                     $product->getCreatedBy(),
+                    $product->getPrice(),
+                    $product->getExpiresAt()
+                        ? $product->getExpiresAt()->now('Europe/Riga')->format('m/d/Y H:i:s')
+                        : null,
                     $product->getCreatedAt()->now('Europe/Riga')->format('m/d/Y H:i:s'),
                     $product->getUpdatedAt()
                         ? $product->getUpdatedAt()->now('Europe/Riga')->format('m/d/Y H:i:s')
                         : null,
                 ];
-            }, $activeProducts));
+            }, array_keys($activeProducts), $activeProducts));
         $tableProducts->render();
     }
 
     public function add(
         string $name,
-        string $description,
         int    $amount,
-        string $createdBy): void
+        string $createdBy,
+        float  $price): void
     {
         $products = $this->load();
-        $id = count($products) + 1;
-        $newProduct = new Product($id, $name, $description, $amount, $createdBy);
+        $id = Uuid::uuid4();
+        $newProduct = new Product($id, $name, $amount, $createdBy, $price);
         $products[] = $newProduct;
         $this->save($products);
         createLogEntry("Product added: $name by $createdBy");
     }
 
-    public function updateAmount(int $id, int $amount, string $user): void
+    public function updateAmount(array $products, int $index, int $amount, string $user): void
     {
-        $products = $this->load();
-        foreach ($products as $product) {
-            if ($product->getId() === $id) {
-                $product->setAmount($amount);
-                $this->save($products);
-                createLogEntry("$user updated product: ID $id, amount changed by $amount units");
-                return;
-            }
-        }
-        echo "Product not found\n";
+        $product = $products[$index];
+        $product->setAmount($amount);
+        createLogEntry("$user updated product: ID {$product->getId()}, amount changed by $amount units");
     }
 
-    public function delete(int $id, string $user): void
+    public function delete(int $index, string $user): void
     {
         $products = $this->load();
-        $deletedProduct = null;
-
-        foreach ($products as $product) {
-            if ($product->getId() === $id) {
-                $product->setDeletedAt(Carbon::now());
-                $deletedProduct = $product;
-                break;
-            }
-        }
-
-        if ($deletedProduct !== null) {
-            $this->save($products);
-            createLogEntry("$user deleted product: ID $id");
-            echo "Product deleted successfully.\n";
-        } else {
-            echo "Product not found.\n";
-        }
+        $product = $products[$index];
+        $product->setDeletedAt(Carbon::now());
+        $this->save($products);
+        createLogEntry("$user deleted product: ID {$product->getId()}");
+        echo "{$product->getName()} deleted successfully.\n";
     }
 }

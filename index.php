@@ -4,6 +4,7 @@ require_once 'vendor/autoload.php';
 
 use App\WarehouseManager;
 use App\UserManager;
+use App\Product;
 use Carbon\Carbon;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Output\ConsoleOutput;
@@ -55,9 +56,9 @@ while (true) {
     switch ($action) {
         case 1:
             $productName = (string)readline("Enter the name of product: ");
-            $productDescription = (string)readline("Enter the description (optional): ");
             $productAmount = (int)readline("Enter the amount: ");
-            $warehouseManager->add($productName, $productDescription, $productAmount, $user->getName());
+            $productPrice = (float)readline("Enter the price: ");
+            $warehouseManager->add($productName, $productAmount, $user->getName(), $productPrice);
             break;
         case 2:
             try {
@@ -66,9 +67,18 @@ while (true) {
                 echo $e->getMessage() . PHP_EOL;
                 break;
             }
-            $id = (int)readline("Enter product ID: ");
+
+            $choice = (int)readline("Enter product index: ");
+            $index = $choice - 1;
+
+            $products = $warehouseManager->load();
+            if (!isset($products[$index])) {
+                echo "Invalid product index.\n";
+                break;
+            }
+
             $productAmount = (int)readline("Enter the number of units you want add/(-)remove: ");
-            $warehouseManager->updateAmount($id, $productAmount, $user->getName());
+            $warehouseManager->updateAmount($products, $index, $productAmount, $user->getName());
             break;
         case 3:
             try {
@@ -77,8 +87,9 @@ while (true) {
                 echo $e->getMessage() . PHP_EOL;
                 break;
             }
-            $id = (int)readline("Enter product ID to delete: ");
-            $warehouseManager->delete($id, $user);
+            $choice = (int)readline("Enter product index to delete: ");
+            $index = $choice - 1;
+            $warehouseManager->delete($index, $user);
             break;
         case 4:
             try {
