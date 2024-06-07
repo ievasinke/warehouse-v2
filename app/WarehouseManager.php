@@ -155,8 +155,12 @@ class WarehouseManager
 
     public function showReport($user): void
     {
-        $additionalRows = $this->createReport();
-        $this->display($additionalRows);
-        createLogEntry("$user created a report");
+        try {
+            $additionalRows = $this->createReport();
+            $this->display($additionalRows);
+            createLogEntry("$user created a report");
+        } catch (Exception $e) {
+            echo $e->getMessage() . PHP_EOL;
+        }
     }
 }
