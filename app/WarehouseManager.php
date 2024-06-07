@@ -7,7 +7,6 @@ use Carbon\Carbon;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableCell;
 use Symfony\Component\Console\Helper\TableCellStyle;
-use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Ramsey\Uuid\Uuid;
 
@@ -35,7 +34,7 @@ class WarehouseManager
                 $productData->amount,
                 $productData->createdBy,
                 $productData->price,
-                $productData->expiresAt,
+                $productData->expiresInDays,
                 $productData->createdAt,
                 $productData->updatedAt,
                 $productData->deletedAt
@@ -57,16 +56,12 @@ class WarehouseManager
     {
         $products = $this->load();
 
-        if (empty($products)) {
-            throw new Exception("No products available.");
-        }
         $activeProducts = array_filter($products, function (Product $product): bool {
             return $product->getDeletedAt() === null;
         });
 
         if (empty($activeProducts)) {
-            echo "No active products available.\n";
-            return;
+            throw new Exception("No products available.");
         }
 
         $outputTasks = new ConsoleOutput();
@@ -80,8 +75,8 @@ class WarehouseManager
                 $product->getAmount(),
                 $product->getCreatedBy(),
                 $product->getPrice(),
-                $product->getExpiresAt()
-                    ? $product->getExpiresAt()->format('m/d/Y H:i:s')
+                $product->getExpiresInDays()
+                    ? $product->getExpiresInDays()->format('m/d/Y')
                     : null,
                 $product->getCreatedAt()->format('m/d/Y H:i:s'),
                 $product->getUpdatedAt()
@@ -102,20 +97,48 @@ class WarehouseManager
         string $name,
         int    $amount,
         string $createdBy,
-        float  $price): void
+        float  $price,
+        int    $expiresInDays = 0): void
     {
+        if (empty($name)) {
+            throw new Exception("Product name cannot be empty.");
+        }
+        if ($amount <= 0) {
+            throw new Exception("Amount must be greater than zero.");
+        }
+        if (empty($createdBy)) {
+            throw new Exception("Created by cannot be empty.");
+        }
+        if ($price <= 0) {
+            throw new Exception("Price must be greater than zero.");
+        }
+
+        $expiresAtCarbon = $expiresInDays > 0 ? Carbon::now()->addDays($expiresInDays) : null;
         $products = $this->load();
-        $id = Uuid::uuid4();
-        $newProduct = new Product($id, $name, $amount, $createdBy, $price);
+        $id = Uuid::uuid4()->toString();
+        $newProduct = new Product($id, $name, $amount, $createdBy, $price, $expiresAtCarbon);
         $products[] = $newProduct;
         $this->save($products);
         createLogEntry("Product added: $name by $createdBy");
     }
 
+    /**
+     * @param Product[] $products
+     * @param int $index
+     * @param int $amount
+     * @param string $user
+     * @return void
+     */
     public function updateAmount(array $products, int $index, int $amount, string $user): void
     {
         $product = $products[$index];
+        $units = $product->getAmount() + $amount;
+        var_dump($units);
+        if ($units < 0) {
+            throw new Exception("Units can't be greater than current amount.");
+        }
         $product->setAmount($amount);
+        $this->save($products);
         createLogEntry("$user updated product: ID {$product->getId()}, amount changed by $amount units");
     }
 
@@ -126,7 +149,6 @@ class WarehouseManager
         $product->setDeletedAt(Carbon::now());
         $this->save($products);
         createLogEntry("$user deleted product: ID {$product->getId()}");
-        echo "{$product->getName()} deleted successfully.\n";
     }
 
     private function createReport(): array

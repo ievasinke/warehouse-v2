@@ -12,7 +12,7 @@ class Product implements JsonSerializable
     private int $amount;
     private string $createdBy;
     private float $price;
-    private ?Carbon $expiresAt;
+    private ?Carbon $expiresInDays;
     private Carbon $createdAt;
     private ?Carbon $updatedAt;
     private ?Carbon $deletedAt;
@@ -23,7 +23,7 @@ class Product implements JsonSerializable
         int     $amount,
         string  $createdBy,
         float   $price,
-        ?string $expiresAt = null,
+        ?string $expiresInDays = null,
         ?string $createdAt = null,
         ?string $updatedAt = null,
         ?string $deletedAt = null
@@ -34,7 +34,7 @@ class Product implements JsonSerializable
         $this->amount = $amount;
         $this->createdBy = $createdBy;
         $this->price = $price;
-        $this->expiresAt = $expiresAt ? Carbon::parse($expiresAt) : null;
+        $this->expiresInDays = $expiresInDays ? Carbon::parse($expiresInDays) : null;
         $this->createdAt = $createdAt ? Carbon::parse($createdAt) : Carbon::now();
         $this->updatedAt = $updatedAt ? Carbon::parse($updatedAt) : null;
         $this->deletedAt = $deletedAt ? Carbon::parse($deletedAt) : null;
@@ -71,9 +71,9 @@ class Product implements JsonSerializable
         return $this->price;
     }
 
-    public function getExpiresAt(): ?Carbon
+    public function getExpiresInDays(): ?Carbon
     {
-        return $this->expiresAt;
+        return $this->expiresInDays;
     }
 
     public function getCreatedAt(): Carbon
@@ -104,7 +104,7 @@ class Product implements JsonSerializable
             'amount' => $this->amount,
             'createdBy' => $this->createdBy,
             'price' => $this->price,
-            'expiresAt' => $this->expiresAt ? $this->expiresAt->toIso8601String() : null,
+            'expiresInDays' => $this->expiresInDays ? $this->expiresInDays->toIso8601String() : null,
             'createdAt' => $this->createdAt->toIso8601String(),
             'updatedAt' => $this->updatedAt ? $this->updatedAt->toIso8601String() : null,
             'deletedAt' => $this->deletedAt ? $this->deletedAt->toIso8601String() : null,

@@ -4,7 +4,6 @@ require_once 'vendor/autoload.php';
 
 use App\WarehouseManager;
 use App\UserManager;
-use App\Product;
 use Carbon\Carbon;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Output\ConsoleOutput;
@@ -59,44 +58,53 @@ while (true) {
             $productName = (string)readline("Enter the name of product: ");
             $productAmount = (int)readline("Enter the amount: ");
             $productPrice = (float)readline("Enter the price: ");
-            $warehouseManager->add($productName, $productAmount, $user->getName(), $productPrice);
+            $productExpiresInDays = (int)readline("Enter quality expiration days (0 if none): ");
+            try {
+                $warehouseManager->add(
+                    $productName,
+                    $productAmount,
+                    $user->getName(),
+                    $productPrice,
+                    $productExpiresInDays
+                );
+                echo "Product added successfully.\n";
+            } catch (Exception $e) {
+                echo "Error: {$e->getMessage()}\n";
+            }
             break;
         case 2:
             try {
                 $warehouseManager->display();
+                $choice = (int)readline("Enter product index: ");
+                $index = $choice - 1;
+
+                $products = $warehouseManager->load();
+                if (!isset($products[$index])) {
+                    echo "Invalid product index.\n";
+                    break;
+                }
+
+                $productAmount = (int)readline("Enter the number of units you want add/(-)remove: ");
+                $warehouseManager->updateAmount($products, $index, $productAmount, $user->getName());
             } catch (Exception $e) {
-                echo $e->getMessage() . PHP_EOL;
-                break;
+                echo "Error: {$e->getMessage()}\n";
             }
-
-            $choice = (int)readline("Enter product index: ");
-            $index = $choice - 1;
-
-            $products = $warehouseManager->load();
-            if (!isset($products[$index])) {
-                echo "Invalid product index.\n";
-                break;
-            }
-
-            $productAmount = (int)readline("Enter the number of units you want add/(-)remove: ");
-            $warehouseManager->updateAmount($products, $index, $productAmount, $user->getName());
             break;
         case 3:
             try {
                 $warehouseManager->display();
+                $choice = (int)readline("Enter product index to delete: ");
+                $index = $choice - 1;
+                $warehouseManager->delete($index, $user);
             } catch (Exception $e) {
-                echo $e->getMessage() . PHP_EOL;
-                break;
+                echo "Error: {$e->getMessage()}\n";
             }
-            $choice = (int)readline("Enter product index to delete: ");
-            $index = $choice - 1;
-            $warehouseManager->delete($index, $user);
             break;
         case 4:
             try {
                 $warehouseManager->display();
             } catch (Exception $e) {
-                echo $e->getMessage() . PHP_EOL;
+                echo "Error: {$e->getMessage()}\n";
             }
             break;
         case 5:
