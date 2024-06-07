@@ -44,6 +44,7 @@ while (true) {
             ['2', 'Change amount'],
             ['3', 'Delete'],
             ['4', 'Display'],
+            ['5', 'Create report'],
             ['0', 'Exit'],
         ])
         ->render();
@@ -97,6 +98,10 @@ while (true) {
             } catch (Exception $e) {
                 echo $e->getMessage() . PHP_EOL;
             }
+            break;
+        case 5:
+            $warehouseManager->createReport($user->getName());
+
             break;
         default:
             echo "Invalid action. Please try again.\n";

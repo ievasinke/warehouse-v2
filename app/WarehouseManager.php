@@ -119,4 +119,20 @@ class WarehouseManager
         createLogEntry("$user deleted product: ID {$product->getId()}");
         echo "{$product->getName()} deleted successfully.\n";
     }
+
+    public function createReport($user): void
+    {
+        $products = $this->load();
+        $this->display();
+        $totalAmount = 0;
+        $totalSum = 0;
+        foreach ($products as $product) {
+            $totalAmount += $product->getAmount();
+            $itemSum = (float)number_format($product->getAmount() * $product->getPrice(), 2);
+            $totalSum += $itemSum;
+        }
+        createLogEntry("$user created a report");
+        echo "Total amount in a warehouse (units): $totalAmount\n";
+        echo "Total sum of goods (euros):          $totalSum\n";
+    }
 }
