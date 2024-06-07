@@ -100,8 +100,7 @@ while (true) {
             }
             break;
         case 5:
-            $warehouseManager->createReport($user->getName());
-
+            $warehouseManager->showReport($user->getName());
             break;
         default:
             echo "Invalid action. Please try again.\n";

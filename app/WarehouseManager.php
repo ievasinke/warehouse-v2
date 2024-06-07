@@ -5,6 +5,9 @@ namespace App;
 use Exception;
 use Carbon\Carbon;
 use Symfony\Component\Console\Helper\Table;
+use Symfony\Component\Console\Helper\TableCell;
+use Symfony\Component\Console\Helper\TableCellStyle;
+use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Ramsey\Uuid\Uuid;
 
@@ -50,7 +53,7 @@ class WarehouseManager
         file_put_contents($this->productFile, json_encode($productsData, JSON_PRETTY_PRINT));
     }
 
-    public function display(): void
+    public function display(array $additionalRows = []): void
     {
         $products = $this->load();
 
@@ -69,23 +72,29 @@ class WarehouseManager
         $outputTasks = new ConsoleOutput();
         $tableProducts = new Table($outputTasks);
         $tableProducts
-            ->setHeaders(['Index', 'Name', 'Amount', 'Created by', 'Price', 'Expires', 'Created at', 'Last Updated'])
-            ->setRows(array_map(function (int $index, Product $product): array {
-                return [
-                    $index + 1,
-                    $product->getName(),
-                    $product->getAmount(),
-                    $product->getCreatedBy(),
-                    $product->getPrice(),
-                    $product->getExpiresAt()
-                        ? $product->getExpiresAt()->now('Europe/Riga')->format('m/d/Y H:i:s')
-                        : null,
-                    $product->getCreatedAt()->now('Europe/Riga')->format('m/d/Y H:i:s'),
-                    $product->getUpdatedAt()
-                        ? $product->getUpdatedAt()->now('Europe/Riga')->format('m/d/Y H:i:s')
-                        : null,
-                ];
-            }, array_keys($activeProducts), $activeProducts));
+            ->setHeaders(['Index', 'Name', 'Amount', 'Created by', 'Price', 'Expires', 'Created at', 'Last Updated']);
+        $rows = (array_map(function (int $index, Product $product): array {
+            return [
+                $index + 1,
+                $product->getName(),
+                $product->getAmount(),
+                $product->getCreatedBy(),
+                $product->getPrice(),
+                $product->getExpiresAt()
+                    ? $product->getExpiresAt()->format('m/d/Y H:i:s')
+                    : null,
+                $product->getCreatedAt()->format('m/d/Y H:i:s'),
+                $product->getUpdatedAt()
+                    ? $product->getUpdatedAt()->format('m/d/Y H:i:s')
+                    : null,
+            ];
+        }, array_keys($activeProducts), $activeProducts));
+
+        if (!empty($additionalRows)) {
+            $rows = array_merge($rows, $additionalRows);
+        }
+
+        $tableProducts->setRows($rows);
         $tableProducts->render();
     }
 
@@ -120,19 +129,34 @@ class WarehouseManager
         echo "{$product->getName()} deleted successfully.\n";
     }
 
-    public function createReport($user): void
+    private function createReport(): array
     {
         $products = $this->load();
-        $this->display();
         $totalAmount = 0;
         $totalSum = 0;
+        $alignLeft = new TableCellStyle(['align' => 'right',]);
         foreach ($products as $product) {
             $totalAmount += $product->getAmount();
             $itemSum = (float)number_format($product->getAmount() * $product->getPrice(), 2);
             $totalSum += $itemSum;
         }
+
+        $reportRow = [
+            new TableCell('Total units:', ['colspan' => 2, 'style' => $alignLeft]),
+            $totalAmount,
+            new TableCell('Total:', ['style' => $alignLeft]),
+            $totalSum,
+            new TableCell('Date:', ['style' => $alignLeft]),
+            Carbon::now('Europe/Riga')->format('m/d/Y H:i:s'),
+            null
+        ];
+        return [$reportRow];
+    }
+
+    public function showReport($user): void
+    {
+        $additionalRows = $this->createReport();
+        $this->display($additionalRows);
         createLogEntry("$user created a report");
-        echo "Total amount in a warehouse (units): $totalAmount\n";
-        echo "Total sum of goods (euros):          $totalSum\n";
     }
 }
