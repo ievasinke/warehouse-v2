@@ -6,7 +6,7 @@ class UserManager
 {
     private string $userFile;
 
-    public function __construct($userFile = 'data/users.json')
+    public function __construct(string $userFile = 'data/users.json')
     {
         $this->userFile = $userFile;
     }

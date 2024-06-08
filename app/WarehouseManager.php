@@ -13,10 +13,14 @@ use Ramsey\Uuid\Uuid;
 class WarehouseManager
 {
     private string $productFile;
+    private Logger $logger;
 
-    public function __construct($productFile = 'data/products.json')
+    public const TIME_FORMAT = 'm/d/Y H:i:s';
+
+    public function __construct($productFile = 'data/products.json', Logger $logger = null)
     {
         $this->productFile = $productFile;
+        $this->logger = $logger ?? new Logger();
     }
 
     public function load(): array
@@ -78,9 +82,9 @@ class WarehouseManager
                 $product->getExpiresInDays()
                     ? $product->getExpiresInDays()->format('m/d/Y')
                     : null,
-                $product->getCreatedAt()->format('m/d/Y H:i:s'),
+                $product->getCreatedAt()->format(self::TIME_FORMAT),
                 $product->getUpdatedAt()
-                    ? $product->getUpdatedAt()->format('m/d/Y H:i:s')
+                    ? $product->getUpdatedAt()->format(self::TIME_FORMAT)
                     : null,
             ];
         }, array_keys($activeProducts), $activeProducts));
@@ -119,7 +123,7 @@ class WarehouseManager
         $newProduct = new Product($id, $name, $amount, $createdBy, $price, $expiresAtCarbon);
         $products[] = $newProduct;
         $this->save($products);
-        createLogEntry("Product added: $name by $createdBy");
+        $this->logger->log("Product added: $name by $createdBy");
     }
 
     /**
@@ -139,7 +143,7 @@ class WarehouseManager
         }
         $product->setAmount($amount);
         $this->save($products);
-        createLogEntry("$user updated product: ID {$product->getId()}, amount changed by $amount units");
+        $this->logger->log("$user updated product: ID {$product->getId()}, amount changed by $amount units");
     }
 
     public function delete(int $index, string $user): void
@@ -148,7 +152,7 @@ class WarehouseManager
         $product = $products[$index];
         $product->setDeletedAt(Carbon::now());
         $this->save($products);
-        createLogEntry("$user deleted product: ID {$product->getId()}");
+        $this->logger->log("$user deleted product: ID {$product->getId()}");
     }
 
     private function createReport(): array
@@ -169,7 +173,7 @@ class WarehouseManager
             new TableCell('Total:', ['style' => $alignLeft]),
             $totalSum,
             new TableCell('Date:', ['style' => $alignLeft]),
-            Carbon::now('Europe/Riga')->format('m/d/Y H:i:s'),
+            Carbon::now('Europe/Riga')->format(self::TIME_FORMAT),
             null
         ];
         return [$reportRow];
@@ -180,7 +184,7 @@ class WarehouseManager
         try {
             $additionalRows = $this->createReport();
             $this->display($additionalRows);
-            createLogEntry("$user created a report");
+            $this->logger->log("$user created a report");
         } catch (Exception $e) {
             echo $e->getMessage() . PHP_EOL;
         }

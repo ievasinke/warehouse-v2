@@ -4,18 +4,14 @@ require_once 'vendor/autoload.php';
 
 use App\WarehouseManager;
 use App\UserManager;
-use Carbon\Carbon;
+use App\Logger;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
-function createLogEntry(string $entry): void
-{
-    file_put_contents(
-        'logs/warehouse.log',
-        Carbon::now('Europe/Riga')->format('m/d/Y H:i:s') . " " . $entry . PHP_EOL,
-        FILE_APPEND
-    );
-}
+$userManager = new UserManager();
+$logger = new Logger();
+$errorLogger = new Logger('logs/error.log');
+$warehouseManager = new WarehouseManager();
 
 echo "Welcome to the WareHouse app!\n";
 $accessCode = (string)readline("Enter your access code: ");
@@ -24,14 +20,11 @@ if (strlen($accessCode) !== 4) {
     exit("Invalid access code. Please try again.\n");
 }
 
-$userManager = new UserManager();
 $user = $userManager->findUserByAccessCode($accessCode);
 if ($user === null) {
     exit("No user found.");
 }
 echo "Welcome $user!\n";
-
-$warehouseManager = new WarehouseManager();
 
 while (true) {
     $outputTasks = new ConsoleOutput();
@@ -69,6 +62,7 @@ while (true) {
                 );
                 echo "Product added successfully.\n";
             } catch (Exception $e) {
+                $errorLogger->log($e->getMessage());
                 echo "Error: {$e->getMessage()}\n";
             }
             break;
@@ -87,6 +81,7 @@ while (true) {
                 $productAmount = (int)readline("Enter the number of units you want add/(-)remove: ");
                 $warehouseManager->updateAmount($products, $index, $productAmount, $user->getName());
             } catch (Exception $e) {
+                $errorLogger->log($e->getMessage());
                 echo "Error: {$e->getMessage()}\n";
             }
             break;
@@ -97,6 +92,7 @@ while (true) {
                 $index = $choice - 1;
                 $warehouseManager->delete($index, $user);
             } catch (Exception $e) {
+                $errorLogger->log($e->getMessage());
                 echo "Error: {$e->getMessage()}\n";
             }
             break;
